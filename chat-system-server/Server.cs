@@ -33,8 +33,9 @@ namespace chat_system_server
                 this.port = port;
                 this.ip = ip;
 
+                
                 serverEndpoint = new IPEndPoint(
-                    new IPAddress(Convert.FromBase64String(ip)),
+                    IPAddress.Parse(ip),
                     port
                 );
 
@@ -78,17 +79,22 @@ namespace chat_system_server
                         3) Have some kind of system that lets clients disconnect
                      */
 
+                    Console.WriteLine("Waiting for a client to connect");
+
                     Socket client = await entry.AcceptAsync(cancellationToken);
                     clientConnections.Add(client);
 
                     var buffer = new byte[1_024];
                     var received = await client.ReceiveAsync(buffer, SocketFlags.None);
-                    
+                    var response = Encoding.UTF8.GetString(buffer, 0, received);
+
 
                 }
             }
             return false;
         }
+
+
 
 
         public int GetPort()
