@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Buffers.Text;
 using System.Collections.Generic;
+using System.Data.SqlTypes;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -21,23 +22,74 @@ namespace chat_system_server
         private int port;
         private string ip;
         private List<Socket> clientConnections;
+        private bool configured = false;
+        private CancellationTokenSource tokenSource;
+        private CancellationToken cancellationToken;
 
         public Server(int port, string ip)
         {
-            this.port = port;
-            this.ip = ip;
+            try
+            {
+                this.port = port;
+                this.ip = ip;
 
-            serverEndpoint = new IPEndPoint(
-                new IPAddress(Convert.FromBase64String(ip)),
-                port
-            );
+                serverEndpoint = new IPEndPoint(
+                    new IPAddress(Convert.FromBase64String(ip)),
+                    port
+                );
 
-            // Create the entry socket
-            entry = new Socket(SocketType.Stream, ProtocolType.Tcp);
+                // Create the entry socket
+                entry = new Socket(SocketType.Stream, ProtocolType.Tcp);
 
-            // Bind the socket with the ip information:
-            entry.Bind(serverEndpoint);
+                // Bind the socket with the ip information:
+                entry.Bind(serverEndpoint);
+
+                tokenSource = new CancellationTokenSource();
+                cancellationToken = tokenSource.Token;
+
+                configured = true;
+            }
+            catch(Exception ex) {
+                Console.WriteLine(ex.Message);
+                configured = false;
+            }
         }
+
+        public async Task<bool> RunServer(int connections)
+        {
+            if (configured)
+            {
+                // How many connections can the server handle
+                entry.Listen(connections);
+
+
+                while (true)
+                {
+
+                    if (cancellationToken.IsCancellationRequested)
+                    {
+                        return false;
+                    }
+
+                    /*
+                        1) check whether the client is first time connection
+                        this is done by checking what the client sends initially
+                        2) Have a second thread that deals with broadcasting and accepting messages from clients
+                        3) Have some kind of system that lets clients disconnect
+                     */
+
+                    Socket client = await entry.AcceptAsync(cancellationToken);
+                    clientConnections.Add(client);
+
+                    var buffer = new byte[1_024];
+                    var received = await client.ReceiveAsync(buffer, SocketFlags.None);
+                    
+
+                }
+            }
+            return false;
+        }
+
 
         public int GetPort()
         {
@@ -68,7 +120,10 @@ namespace chat_system_server
             return clientConnections;
         }
 
-
+        public CancellationToken GetCancellationToken()
+        {
+            return cancellationToken;
+        }
 
     }
 }
