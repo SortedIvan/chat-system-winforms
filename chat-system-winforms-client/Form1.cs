@@ -1,3 +1,4 @@
+using chat_system_winforms.Models;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -22,12 +23,9 @@ namespace chat_system_winforms
             );
 
             await socket.ConnectAsync(serverEndpoint);
-
-            string entryMessage = "{\"name\":\"John\", \"age\":30, \"city\":\"New York\"}";
-            var messageBytes = Encoding.UTF8.GetBytes(message);
+            Msg message = new Msg(ActionType.Connect, "Test", "", "");
+            var messageBytes = Encoding.UTF8.GetBytes(message.ToJsonString());
             _ = await socket.SendAsync(messageBytes, SocketFlags.None);
-
-
         }
 
         private void sendMessageBtn_Click(object sender, EventArgs e)

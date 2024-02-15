@@ -1,4 +1,5 @@
-﻿using Newtonsoft.Json.Linq;
+﻿using chat_system_server.Models;
+using Newtonsoft.Json.Linq;
 using System;
 using System.Buffers.Text;
 using System.Collections.Generic;
@@ -111,13 +112,14 @@ namespace chat_system_server
             var buffer = new byte[1_024];
             var initialMessageRec = await client.ReceiveAsync(buffer, SocketFlags.None);
             var responseFromClient = Encoding.UTF8.GetString(buffer, 0, initialMessageRec);
-
-           
-
             JObject json = JObject.Parse(responseFromClient);
 
+            Msg msg = new Msg();
+            msg.ParseFromJsonAndSet(json);
 
-            Console.WriteLine(json["name"]);
+            Console.WriteLine(msg.GetUserFrom());
+
+
             //while (true)
             //{
 
