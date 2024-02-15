@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Newtonsoft.Json.Linq;
+using System;
 using System.Buffers.Text;
 using System.Collections.Generic;
 using System.Data.SqlTypes;
@@ -23,6 +24,7 @@ namespace chat_system_server
         private string ip;
         private List<Socket> clientConnections;
         private bool configured = false;
+        private bool serverRunning = false;
         private CancellationTokenSource tokenSource;
         private CancellationToken cancellationToken;
 
@@ -30,6 +32,8 @@ namespace chat_system_server
         {
             try
             {
+                clientConnections = new List<Socket>(); // Initialize the clients array
+
                 this.port = port;
                 this.ip = ip;
 
@@ -49,6 +53,7 @@ namespace chat_system_server
                 cancellationToken = tokenSource.Token;
 
                 configured = true;
+                serverRunning = true;
             }
             catch(Exception ex) {
                 Console.WriteLine(ex.Message);
@@ -66,7 +71,7 @@ namespace chat_system_server
 
                 while (true)
                 {
-
+                    Console.WriteLine("hi");
                     if (cancellationToken.IsCancellationRequested)
                     {
                         return false;
@@ -82,20 +87,58 @@ namespace chat_system_server
                     Console.WriteLine("Waiting for a client to connect");
 
                     Socket client = await entry.AcceptAsync(cancellationToken);
-                    clientConnections.Add(client);
+                    // As soon as we receive a client, pass it onto a client handle method
 
-                    var buffer = new byte[1_024];
-                    var received = await client.ReceiveAsync(buffer, SocketFlags.None);
-                    var response = Encoding.UTF8.GetString(buffer, 0, received);
-
-
+                    await HandleClient(client);
                 }
             }
             return false;
         }
 
+        // We use the C# ecosystem to start a task and handle the client seperately
+        private async Task HandleClient(Socket client)
+        {
+            // Check if the client has already been added
+            if (!CheckClientAlreadyExists(client))
+            {
+                clientConnections.Add(client);
+            }
+            else
+            {
+                return;
+            }
+         
+            var buffer = new byte[1_024];
+            var initialMessageRec = await client.ReceiveAsync(buffer, SocketFlags.None);
+            var responseFromClient = Encoding.UTF8.GetString(buffer, 0, initialMessageRec);
+
+           
+
+            JObject json = JObject.Parse(responseFromClient);
 
 
+            Console.WriteLine(json["name"]);
+            //while (true)
+            //{
+
+            //    var received = await client.ReceiveAsync(buffer, SocketFlags.None);
+            //    var response = Encoding.UTF8.GetString(buffer, 0, received);
+
+            //}
+
+        }
+
+        private bool CheckClientAlreadyExists(Socket client)
+        {
+            for (int i =0; i < clientConnections.Count; i++)
+            {
+                if (clientConnections[i].RemoteEndPoint == client.RemoteEndPoint)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
 
         public int GetPort()
         {
