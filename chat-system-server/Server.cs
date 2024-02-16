@@ -23,7 +23,7 @@ namespace chat_system_server
         private IPEndPoint serverEndpoint;
         private int port;
         private string ip;
-        private List<Socket> clientConnections;
+        private Dictionary<string, User> connectedUsers;
         private bool configured = false;
         private bool serverRunning = false;
         private CancellationTokenSource tokenSource;
@@ -33,7 +33,7 @@ namespace chat_system_server
         {
             try
             {
-                clientConnections = new List<Socket>(); // Initialize the clients array
+                connectedUsers = new Dictionary<String,User>(); // Initialize the Users array
 
                 this.port = port;
                 this.ip = ip;
@@ -90,57 +90,74 @@ namespace chat_system_server
                     Socket client = await entry.AcceptAsync(cancellationToken);
                     // As soon as we receive a client, pass it onto a client handle method
 
-                    await HandleClient(client);
+                    await AcceptClient(client);
                 }
             }
             return false;
         }
 
         // We use the C# ecosystem to start a task and handle the client seperately
-        private async Task HandleClient(Socket client)
+        private async Task AcceptClient(Socket client)
         {
-            // Check if the client has already been added
-            if (!CheckClientAlreadyExists(client))
-            {
-                clientConnections.Add(client);
-            }
-            else
-            {
-                return;
-            }
-         
             var buffer = new byte[1_024];
             var initialMessageRec = await client.ReceiveAsync(buffer, SocketFlags.None);
             var responseFromClient = Encoding.UTF8.GetString(buffer, 0, initialMessageRec);
-            JObject json = JObject.Parse(responseFromClient);
+            JObject connectedJson = JObject.Parse(responseFromClient);
+            Msg initialMsg = new Msg();
+            initialMsg.ParseFromJsonAndSet(connectedJson);
 
-            Msg msg = new Msg();
-            msg.ParseFromJsonAndSet(json);
+            Console.WriteLine(client.RemoteEndPoint.ToString());
 
-            Console.WriteLine(msg.GetUserFrom());
+            // Check if the user has already been added
+            if (CheckUserAlreadyExists(initialMsg.GetUserFrom()))
+            {
+                ServerResponse response = new ServerResponse();
+                response.SetResponseType(ResponseType.NAME_TAKEN);
+                await client.SendAsync(Encoding.UTF8.GetBytes(response.ToJsonString()), 0);
+                return;
+            }
 
+            User user = new User(client.RemoteEndPoint.ToString(), initialMsg.GetUserFrom(), client);
 
-            //while (true)
-            //{
+            connectedUsers.Add(initialMsg.GetUserFrom(), user);
+            Console.WriteLine(initialMsg.GetUserFrom());
 
-            //    var received = await client.ReceiveAsync(buffer, SocketFlags.None);
-            //    var response = Encoding.UTF8.GetString(buffer, 0, received);
-
-            //}
-
+            // Now run the handling of the client in the background
+            await Task.Run(async () => await HandleClient(user, client));
         }
 
-        private bool CheckClientAlreadyExists(Socket client)
+        private async Task HandleClient(User user, Socket client)
         {
-            for (int i =0; i < clientConnections.Count; i++)
+            var buffer = new byte[1_024];   
+            while (true) // Go in a 
             {
-                if (clientConnections[i].RemoteEndPoint == client.RemoteEndPoint)
-                {
-                    return true;
-                }
+                var received = await client.ReceiveAsync(buffer, SocketFlags.None);
+                var response = Encoding.UTF8.GetString(buffer, 0, received);
+
+            }
+        }
+
+
+        private bool CheckUserAlreadyExists(string username)
+        {
+            if (connectedUsers.ContainsKey(username))
+            {
+                return true;
             }
             return false;
         }
+
+        
+
+        private async void ProcessGlobalClientMessage(Msg message)
+        {
+            // Propagate it over all of the connected users
+            for (int i = 0; i < connectedUsers.Count; ++i)
+            {
+                
+            }
+        }
+
 
         public int GetPort()
         {
@@ -161,15 +178,6 @@ namespace chat_system_server
             return ip;
         }
 
-        public void AddClientConnection(Socket clientConnection)
-        {
-            clientConnections.Add(clientConnection);
-        }
-
-        public List<Socket> GetClientConnections()
-        {
-            return clientConnections;
-        }
 
         public CancellationToken GetCancellationToken()
         {

@@ -4,10 +4,10 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Xml.Linq;
 
-namespace chat_system_winforms.Models
+namespace chat_system_server.Models
 {
+
     public enum ActionType
     {
         Disconnect,
@@ -35,12 +35,12 @@ namespace chat_system_winforms.Models
 
         public Msg()
         {
-
+            
         }
 
         public string ToJsonString()
         {
-            string jsonObj = $"{{\"actionType\": \"{(int)actionType}\", \"userFrom\": \"{userFrom}\", \"content\": \"{content}\", \"userTo\": \"{userTo}\"}}";
+            string jsonObj = $"{{\"actionType\": \"{actionType}\", \"userFrom\": \"{userFrom}\", \"content\": \"{content}\", \"userTo\": \"{userTo}\"}}";
             return jsonObj;
         }
 

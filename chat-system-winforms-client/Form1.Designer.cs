@@ -33,6 +33,7 @@
             sendMessageBtn = new Button();
             tbUsername = new TextBox();
             tbMessage = new TextBox();
+            serverResponseLbl = new Label();
             SuspendLayout();
             // 
             // chatRoomsBox
@@ -78,11 +79,21 @@
             tbMessage.Size = new Size(114, 23);
             tbMessage.TabIndex = 4;
             // 
+            // serverResponseLbl
+            // 
+            serverResponseLbl.AutoSize = true;
+            serverResponseLbl.Location = new Point(32, 126);
+            serverResponseLbl.Name = "serverResponseLbl";
+            serverResponseLbl.Size = new Size(38, 15);
+            serverResponseLbl.TabIndex = 5;
+            serverResponseLbl.Text = "label1";
+            // 
             // Form1
             // 
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             ClientSize = new Size(800, 450);
+            Controls.Add(serverResponseLbl);
             Controls.Add(tbMessage);
             Controls.Add(tbUsername);
             Controls.Add(sendMessageBtn);
@@ -101,5 +112,6 @@
         private Button sendMessageBtn;
         private TextBox tbUsername;
         private TextBox tbMessage;
+        private Label serverResponseLbl;
     }
 }
