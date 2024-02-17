@@ -1,14 +1,9 @@
 ﻿using chat_system_server.Models;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Buffers.Text;
-using System.Collections.Generic;
-using System.Data.SqlTypes;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace chat_system_server
 {
@@ -24,6 +19,7 @@ namespace chat_system_server
         private int port;
         private string ip;
         private Dictionary<string, User> connectedUsers;
+        //private Dictionary<string, Task> userTasks;
         private bool configured = false;
         private bool serverRunning = false;
         private CancellationTokenSource tokenSource;
@@ -61,7 +57,8 @@ namespace chat_system_server
                 configured = false;
             }
         }
-
+        
+        // Main task that runs the server and handles newly connecting clients
         public async Task<bool> RunServer(int connections)
         {
             if (configured)
@@ -69,10 +66,8 @@ namespace chat_system_server
                 // How many connections can the server handle
                 entry.Listen(connections);
 
-
                 while (true)
                 {
-                    Console.WriteLine("hi");
                     if (cancellationToken.IsCancellationRequested)
                     {
                         return false;
@@ -101,40 +96,76 @@ namespace chat_system_server
         {
             var buffer = new byte[1_024];
             var initialMessageRec = await client.ReceiveAsync(buffer, SocketFlags.None);
-            var responseFromClient = Encoding.UTF8.GetString(buffer, 0, initialMessageRec);
-            JObject connectedJson = JObject.Parse(responseFromClient);
-            Msg initialMsg = new Msg();
-            initialMsg.ParseFromJsonAndSet(connectedJson);
+            Msg connectedMsg = ProcessMessageFromClient(buffer, 0, initialMessageRec);
 
-            Console.WriteLine(client.RemoteEndPoint.ToString());
+            ServerResponse response = new ServerResponse(); // Initialize a server response obj
+
+            // Check if the action is connecting
+
+            if (connectedMsg.GetActionType() != ActionType.Connect)
+            {
+                response.SetResponseType(ResponseType.BAD_REQUEST);
+                response.SetMessage("User not yet connected. Please connect first");
+                await client.SendAsync(Encoding.UTF8.GetBytes(response.ToJsonString()), 0);
+                return;
+            }
+
+            bool userExists = CheckUserAlreadyExists(connectedMsg.GetUserFrom());
 
             // Check if the user has already been added
-            if (CheckUserAlreadyExists(initialMsg.GetUserFrom()))
+            if (userExists)
             {
-                ServerResponse response = new ServerResponse();
                 response.SetResponseType(ResponseType.NAME_TAKEN);
                 await client.SendAsync(Encoding.UTF8.GetBytes(response.ToJsonString()), 0);
                 return;
             }
 
-            User user = new User(client.RemoteEndPoint.ToString(), initialMsg.GetUserFrom(), client);
+            if (String.IsNullOrEmpty(connectedMsg.GetUserFrom()))
+            {
+                response.SetResponseType(ResponseType.BAD_REQUEST);
+                response.SetMessage("Please provide a username");
+                await client.SendAsync(Encoding.UTF8.GetBytes(response.ToJsonString()), 0);
+                return;
+            }
+            
 
-            connectedUsers.Add(initialMsg.GetUserFrom(), user);
-            Console.WriteLine(initialMsg.GetUserFrom());
+            User user = new User(client.RemoteEndPoint.ToString(), connectedMsg.GetUserFrom(), client);
 
-            // Now run the handling of the client in the background
-            await Task.Run(async () => await HandleClient(user, client));
+            connectedUsers.Add(connectedMsg.GetUserFrom(), user);
+
+            // If everything else above is good:
+            response.SetResponseType(ResponseType.OK);
+            response.SetMessage("User connected sucessfully");
+            await client.SendAsync(Encoding.UTF8.GetBytes(response.ToJsonString()), 0);
+
+            // Create a background task without awaiting for its completion
+            Task userTask = HandleClient(user, client);
+
+            // Finally, add the task to a collection in case synchronization is needed
+            //userTasks.Add(user.GetUsername(), userTask);
         }
 
         private async Task HandleClient(User user, Socket client)
         {
-            var buffer = new byte[1_024];   
+            var buffer = new byte[1_024];
+
             while (true) // Go in a 
             {
                 var received = await client.ReceiveAsync(buffer, SocketFlags.None);
-                var response = Encoding.UTF8.GetString(buffer, 0, received);
+                Msg message = ProcessMessageFromClient(buffer, 0, received);
+
+                Console.WriteLine(user.GetUsername() + ": " + message.GetContent());
 
             }
+        }
+
+        private Msg ProcessMessageFromClient(byte[] bytes, int index, int count)
+        {
+            var responseFromClient = Encoding.UTF8.GetString(bytes, index, count);
+            JObject messageJson = JObject.Parse(responseFromClient);
+            Msg message = new Msg();
+            message.ParseFromJsonAndSet(messageJson);
+            return message;
         }
 
 

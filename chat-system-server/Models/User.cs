@@ -39,6 +39,10 @@ namespace chat_system_server.Models
             return clientSocket;
         }
 
+        public string GetUsername()
+        {
+            return username;
+        }
 
     }
 }

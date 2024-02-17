@@ -3,8 +3,6 @@ using Newtonsoft.Json.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
-using System.Threading;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.StartPanel;
 
 namespace chat_system_winforms
 {
@@ -55,6 +53,7 @@ namespace chat_system_winforms
                     break;
                 case ResponseType.OK:
                     connected = true;
+                    serverResponseLbl.Text = servResponse.GetServerMessage();
                     this.username = username;
                     break;
             }
