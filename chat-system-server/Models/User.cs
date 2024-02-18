@@ -13,7 +13,8 @@ namespace chat_system_server.Models
         private string username;
         private DateTime firstJoined;
         private DateTime left;
-        private List<string> chatMessages; // Keeping it simple with only saved string chats for now
+        private List<ClientMessage> globalMessages;
+        private List<ClientMessage> privateMessages;
         private Socket clientSocket;
 
 
@@ -24,15 +25,26 @@ namespace chat_system_server.Models
             this.clientSocket = clientSocket;
         }
 
-        public List<string> GetUserChats()
+        public List<ClientMessage> GetGlobalMessages()
         {
-            return chatMessages;
+            return globalMessages;
         }
 
-        public void AddChatMessage(string message)
+        public List<ClientMessage> GetPrivateMessages()
         {
-            chatMessages.Add(message);
+            return privateMessages;
         }
+
+        public void AddGlobalMessage(ClientMessage message)
+        {
+            globalMessages.Add(message);
+        }
+
+        public void AddPrivateMessage(ClientMessage message)
+        {
+            privateMessages.Add(message);
+        }
+
 
         public Socket GetClientSocket()
         {

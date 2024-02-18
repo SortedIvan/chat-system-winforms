@@ -61,7 +61,7 @@ namespace chat_system_server
         // Main task that runs the server and handles newly connecting clients
         public async Task<bool> RunServer(int connections)
         {
-            if (configured)
+            if (configured && serverRunning)
             {
                 // How many connections can the server handle
                 entry.Listen(connections);
@@ -76,8 +76,8 @@ namespace chat_system_server
                     /*
                         1) check whether the client is first time connection
                         this is done by checking what the client sends initially
-                        2) Have a second thread that deals with broadcasting and accepting messages from clients
-                        3) Have some kind of system that lets clients disconnect
+                        2) Start a background task for each client that handles incoming messages/etc
+                           -> problem with the above: synchronization
                      */
 
                     Console.WriteLine("Waiting for a client to connect");
@@ -96,13 +96,13 @@ namespace chat_system_server
         {
             var buffer = new byte[1_024];
             var initialMessageRec = await client.ReceiveAsync(buffer, SocketFlags.None);
-            Msg connectedMsg = ProcessMessageFromClient(buffer, 0, initialMessageRec);
+            ClientMessage connectedMsg = ConverToMessage(buffer, 0, initialMessageRec);
 
-            ServerResponse response = new ServerResponse(); // Initialize a server response obj
+            ServerMessage response = new ServerMessage(); // Initialize a server response obj
 
             // Check if the action is connecting
 
-            if (connectedMsg.GetActionType() != ActionType.Connect)
+            if (connectedMsg.GetActionType() != ActionType.CONNECT)
             {
                 response.SetResponseType(ResponseType.BAD_REQUEST);
                 response.SetMessage("User not yet connected. Please connect first");
@@ -136,7 +136,24 @@ namespace chat_system_server
             // If everything else above is good:
             response.SetResponseType(ResponseType.OK);
             response.SetMessage("User connected sucessfully");
-            await client.SendAsync(Encoding.UTF8.GetBytes(response.ToJsonString()), 0);
+            client.SendAsync(Encoding.UTF8.GetBytes(response.ToJsonString()), 0).Wait();
+
+            // Wait for acknowledgement from client
+            var received = await client.ReceiveAsync(buffer, SocketFlags.None);
+            ClientMessage ackn = ConverToMessage(buffer, 0, received);
+            
+            if (ackn.GetActionType() != ActionType.RECEIVED)
+            {
+                // remove user
+            }
+
+
+
+            ServerMessage clientConnectionMsg = new ServerMessage();
+            clientConnectionMsg.SetMessage(user.GetUsername() + " has joined the chat room! Say hi!");
+            clientConnectionMsg.SetResponseType(ResponseType.USER_JOINED);
+            await client.SendAsync(Encoding.UTF8.GetBytes(clientConnectionMsg.ToJsonString()), 0);
+
 
             // Create a background task without awaiting for its completion
             Task userTask = HandleClient(user, client);
@@ -149,21 +166,21 @@ namespace chat_system_server
         {
             var buffer = new byte[1_024];
 
-            while (true) // Go in a 
+            while (true)
             {
                 var received = await client.ReceiveAsync(buffer, SocketFlags.None);
-                Msg message = ProcessMessageFromClient(buffer, 0, received);
-
+                ClientMessage message = ConverToMessage(buffer, 0, received);
+                ProcessMessage(message);
                 Console.WriteLine(user.GetUsername() + ": " + message.GetContent());
 
             }
         }
 
-        private Msg ProcessMessageFromClient(byte[] bytes, int index, int count)
+        private ClientMessage ConverToMessage(byte[] bytes, int index, int count)
         {
             var responseFromClient = Encoding.UTF8.GetString(bytes, index, count);
             JObject messageJson = JObject.Parse(responseFromClient);
-            Msg message = new Msg();
+            ClientMessage message = new ClientMessage();
             message.ParseFromJsonAndSet(messageJson);
             return message;
         }
@@ -178,17 +195,28 @@ namespace chat_system_server
             return false;
         }
 
-        
-
-        private async void ProcessGlobalClientMessage(Msg message)
+        private async void ProcessMessage(ClientMessage message)
         {
-            // Propagate it over all of the connected users
-            for (int i = 0; i < connectedUsers.Count; ++i)
+            switch (message.GetActionType())
             {
-                
+                case ActionType.MESSAGE:
+                    ProcessGlobalClientMessage(message);
+                    break;
             }
         }
 
+        private async void ProcessGlobalClientMessage(ClientMessage message)
+        {
+            foreach (KeyValuePair<string, User> entry in connectedUsers)
+            {
+                ServerMessage response = new ServerMessage(); // Initialize a server response obj
+                response.SetResponseType(ResponseType.GLOBAL_MESSAGE);
+                response.SetMessage(message.GetUserFrom() + ": " + message.GetContent());
+                await entry.Value
+                    .GetClientSocket()
+                    .SendAsync(Encoding.UTF8.GetBytes(response.ToJsonString()), 0);
+            }
+        }
 
         public int GetPort()
         {

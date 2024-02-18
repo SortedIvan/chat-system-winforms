@@ -28,7 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
-            chatRoomsBox = new RichTextBox();
+            chatBox = new RichTextBox();
             btnJoin = new Button();
             sendMessageBtn = new Button();
             tbUsername = new TextBox();
@@ -36,14 +36,14 @@
             serverResponseLbl = new Label();
             SuspendLayout();
             // 
-            // chatRoomsBox
+            // chatBox
             // 
-            chatRoomsBox.Location = new Point(294, 12);
-            chatRoomsBox.Name = "chatRoomsBox";
-            chatRoomsBox.ReadOnly = true;
-            chatRoomsBox.Size = new Size(511, 414);
-            chatRoomsBox.TabIndex = 0;
-            chatRoomsBox.Text = "";
+            chatBox.Location = new Point(294, 12);
+            chatBox.Name = "chatBox";
+            chatBox.ReadOnly = true;
+            chatBox.Size = new Size(511, 414);
+            chatBox.TabIndex = 0;
+            chatBox.Text = "";
             // 
             // btnJoin
             // 
@@ -98,7 +98,7 @@
             Controls.Add(tbUsername);
             Controls.Add(sendMessageBtn);
             Controls.Add(btnJoin);
-            Controls.Add(chatRoomsBox);
+            Controls.Add(chatBox);
             Name = "Form1";
             Text = "Form1";
             ResumeLayout(false);
@@ -107,7 +107,7 @@
 
         #endregion
 
-        private RichTextBox chatRoomsBox;
+        private RichTextBox chatBox;
         private Button btnJoin;
         private Button sendMessageBtn;
         private TextBox tbUsername;

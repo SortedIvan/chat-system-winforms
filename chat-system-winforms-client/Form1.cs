@@ -55,6 +55,9 @@ namespace chat_system_winforms
                     connected = true;
                     serverResponseLbl.Text = servResponse.GetServerMessage();
                     this.username = username;
+
+                    _ = MainClientLoop();
+
                     break;
             }
 
@@ -66,6 +69,26 @@ namespace chat_system_winforms
             Msg message = new Msg(ActionType.Message, username, messageContent, " ");
             var messageBytes = Encoding.UTF8.GetBytes(message.ToJsonString());
             _ = await client.SendAsync(messageBytes, SocketFlags.None);
+        }
+
+        private async Task MainClientLoop()
+        {
+            while (connected)
+            {
+                var responseBuffer = new byte[1_024];
+                var received = await client.ReceiveAsync(responseBuffer, SocketFlags.None);
+                var response = Encoding.UTF8.GetString(responseBuffer, 0, received);
+                JObject jsonServerResponse = JObject.Parse(response);
+
+                ServerResponse servResponse = new ServerResponse();
+                servResponse.ParseFromJsonAndSet(jsonServerResponse);
+
+                if (servResponse.GetResponseType() == ResponseType.OK)
+                {
+                    chatBox.AppendText(servResponse.GetServerMessage() +  "\n");
+                }
+                
+            }
         }
     }
 }

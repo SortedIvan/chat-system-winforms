@@ -1,32 +1,29 @@
 ﻿using Newtonsoft.Json.Linq;
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 
-namespace chat_system_server.Models
+namespace chat_system_client_wpf.Models
 {
     public enum ResponseType
     {
         OK,
         NAME_TAKEN,
-        BAD_REQUEST
+        BAD_REQUEST,
+        GLOBAL_MESSAGE,
+        USER_JOINED
     }
 
-    public class ServerResponse
+    public class ServerMessage
     {
         private ResponseType type;
         private string message;
 
-        public ServerResponse(ResponseType type, string message)
+        public ServerMessage(ResponseType type, string message)
         {
             this.type = type;
             this.message = message;
         }
 
-        public ServerResponse()
+        public ServerMessage()
         {
 
         }
@@ -53,14 +50,5 @@ namespace chat_system_server.Models
             return message;
         }
 
-        public void SetResponseType(ResponseType type)
-        {
-            this.type = type;
-        }
-
-        public void SetMessage(string message)
-        {
-            this.message = message;
-        }
     }
 }

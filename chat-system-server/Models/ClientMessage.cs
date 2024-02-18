@@ -7,35 +7,37 @@ using System.Threading.Tasks;
 
 namespace chat_system_server.Models
 {
-
     public enum ActionType
     {
-        Disconnect,
-        Connect,
-        Message,
-        PrivateMessage
+        DISCONNECT,
+        CONNECT,
+        MESSAGE,
+        PRIVATE_MESSAGE,
+        RECEIVED
     }
 
 
-    public class Msg
+    public class ClientMessage
     {
         public bool isValid = true;
         private ActionType actionType;
         private string userFrom;
         private string? content;
         private string? userTo;
+        private DateTime timestamp;
 
-        public Msg(ActionType actionType, string userFrom, string content, string userTo)
+        public ClientMessage(ActionType actionType, string userFrom, string content, string userTo)
         {
             this.actionType = actionType;
             this.userFrom = userFrom;
             this.content = content;
             this.userTo = userTo;
+            timestamp = DateTime.Now;
         }
 
-        public Msg()
+        public ClientMessage()
         {
-            
+            timestamp = DateTime.Now;
         }
 
         public string ToJsonString()
@@ -62,25 +64,32 @@ namespace chat_system_server.Models
             }
         }
 
-        public Msg ParseFromJsonAndReturn(JObject json)
+        public ClientMessage ParseFromJsonAndReturn(JObject json)
         {
             try
             {
-                Msg msg = new Msg(
+                ClientMessage msg = new ClientMessage(
                 (ActionType)Convert.ToInt16(json["actionType"]),
                 json["userFrom"].ToString(),
                 json["content"].ToString(),
                 json["userTo"].ToString());
+
+                msg.SetTimestamp(DateTime.Now);
 
                 return msg;
             }
             catch (Exception e)
             {
                 Console.WriteLine(e.Message);
-                Msg msg = new Msg();
+                ClientMessage msg = new ClientMessage();
                 msg.isValid = false;
                 return msg;
             }
+        }
+
+        public void SetTimestamp(DateTime timestamp)
+        {
+            this.timestamp = timestamp;
         }
 
         public ActionType GetActionType()
