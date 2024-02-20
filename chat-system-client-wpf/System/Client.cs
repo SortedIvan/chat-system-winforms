@@ -1,9 +1,5 @@
 ﻿using chat_system_client_wpf.Models;
 using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,7 +19,7 @@ namespace ChatClient.System
             username = "";
         }
 
-        public async Task MainClientLoop(RichTextBox chatBox)
+        public async Task MainClientLoop(ListBox chatBox)
         {
             while (connected)
             {
@@ -38,10 +34,10 @@ namespace ChatClient.System
                 switch (servResponse.GetResponseType())
                 {
                     case ResponseType.GLOBAL_MESSAGE:
-                    chatBox.AppendText(servResponse.GetServerMessage() + "\n");
+                    chatBox.Items.Add(servResponse.GetServerMessage());
                     break;
                     case ResponseType.USER_JOINED: // Keep message and joins seperated for further logic
-                    chatBox.AppendText(servResponse.GetServerMessage() + "\n");
+                    chatBox.Items.Add(servResponse.GetServerMessage());
                     break;
                 }
 

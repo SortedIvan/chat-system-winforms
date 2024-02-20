@@ -145,9 +145,12 @@ namespace chat_system_server
             if (ackn.GetActionType() != ActionType.RECEIVED)
             {
                 // remove user
+                Console.WriteLine(ackn.GetActionType());
+                connectedUsers.Remove(user.GetUsername());
+                return;
             }
 
-
+            connectedUsers[user.GetUsername()].SetIsConnected(true);
 
             ServerMessage clientConnectionMsg = new ServerMessage();
             clientConnectionMsg.SetMessage(user.GetUsername() + " has joined the chat room! Say hi!");
@@ -165,10 +168,22 @@ namespace chat_system_server
         private async Task HandleClient(User user, Socket client)
         {
             var buffer = new byte[1_024];
-
             while (true)
             {
-                var received = await client.ReceiveAsync(buffer, SocketFlags.None);
+               
+                int received = await client.ReceiveAsync(buffer, SocketFlags.None);
+
+                if (received == 0)
+                {
+                    
+                    // User closed connection
+                    connectedUsers.Remove(user.GetUsername());
+                    SendGlobalServerMessage(user.GetUsername() + " has left the chat. Womp!");
+                    return;
+                }
+
+                
+
                 ClientMessage message = ConverToMessage(buffer, 0, received);
                 ProcessMessage(message);
                 Console.WriteLine(user.GetUsername() + ": " + message.GetContent());
@@ -218,6 +233,25 @@ namespace chat_system_server
             }
         }
 
+        private async void SendGlobalServerMessage(string content)
+        {
+            foreach (KeyValuePair<string, User> entry in connectedUsers)
+            {
+                if (!entry.Value.GetIsConnected())
+                {
+                    // This client is not connected yet
+                    continue;
+                }
+
+                ServerMessage message = new ServerMessage();
+                message.SetResponseType(ResponseType.GLOBAL_MESSAGE);
+                message.SetMessage(content);
+                await entry.Value
+                    .GetClientSocket()
+                    .SendAsync(Encoding.UTF8.GetBytes(message.ToJsonString()), 0);
+            }
+        }
+
         public int GetPort()
         {
             return port;
@@ -236,7 +270,6 @@ namespace chat_system_server
         {
             return ip;
         }
-
 
         public CancellationToken GetCancellationToken()
         {

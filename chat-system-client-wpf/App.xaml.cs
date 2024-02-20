@@ -13,6 +13,6 @@ namespace chat_system_client_wpf
     /// </summary>
     public partial class App : Application
     {
-
+        
     }
 }

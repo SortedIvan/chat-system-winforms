@@ -16,6 +16,7 @@ namespace chat_system_server.Models
         private List<ClientMessage> globalMessages;
         private List<ClientMessage> privateMessages;
         private Socket clientSocket;
+        private bool isConnected = false;
 
 
         public User(string address, string username, Socket clientSocket) {
@@ -45,6 +46,14 @@ namespace chat_system_server.Models
             privateMessages.Add(message);
         }
 
+        public void SetIsConnected(bool isConnected)
+        {
+            this.isConnected = isConnected;
+        }
+
+        public bool GetIsConnected() {
+            return isConnected;
+        }
 
         public Socket GetClientSocket()
         {
@@ -55,6 +64,8 @@ namespace chat_system_server.Models
         {
             return username;
         }
+
+       
 
     }
 }
