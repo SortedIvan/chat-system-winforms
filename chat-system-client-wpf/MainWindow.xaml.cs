@@ -82,9 +82,8 @@ namespace chat_system_client_wpf
                     messageBytes = Encoding.UTF8.GetBytes(ackn.ToJsonString());
                     _ = await client.GetClientSocket().SendAsync(messageBytes, SocketFlags.None);
             
-
                     this.client.SetUsername(username);
-                    _ = client.MainClientLoop(lbMain);
+                    _ = client.MainClientLoop(lbMain, lbUsers);
                     break;
             }
         }
@@ -96,8 +95,20 @@ namespace chat_system_client_wpf
                 return;
             }
 
+            bool privateMessage = tbReciever.Text.Length > 0;
+
             string messageContent = tbMessage.Text;
-            ClientMessage message = new ClientMessage(ActionType.MESSAGE, client.GetUsername(), messageContent, "None");
+            ClientMessage message;
+
+            if (privateMessage)
+            {
+                message = new ClientMessage(ActionType.PRIVATE_MESSAGE, client.GetUsername(), messageContent, tbReciever.Text);
+            }
+            else
+            {
+                message = new ClientMessage(ActionType.PRIVATE_MESSAGE, client.GetUsername(), messageContent, "None");
+            }
+
             var messageBytes = Encoding.UTF8.GetBytes(message.ToJsonString());
             _ = await client.GetClientSocket().SendAsync(messageBytes, SocketFlags.None);
         }
@@ -107,6 +118,15 @@ namespace chat_system_client_wpf
 
         }
 
-        
+        private void lbMain_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            var addedItems = e.AddedItems;
+            if (addedItems.Count <= 0)
+            {
+                return;
+            }
+
+            tbReciever.Text = addedItems[0].ToString();
+        }
     }
 }

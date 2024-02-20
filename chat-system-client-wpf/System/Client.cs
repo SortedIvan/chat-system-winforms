@@ -19,7 +19,7 @@ namespace ChatClient.System
             username = "";
         }
 
-        public async Task MainClientLoop(ListBox chatBox)
+        public async Task MainClientLoop(ListBox chatBox, ListBox userBox)
         {
             while (connected)
             {
@@ -36,8 +36,10 @@ namespace ChatClient.System
                     case ResponseType.GLOBAL_MESSAGE:
                     chatBox.Items.Add(servResponse.GetServerMessage());
                     break;
-                    case ResponseType.USER_JOINED: // Keep message and joins seperated for further logic
-                    chatBox.Items.Add(servResponse.GetServerMessage());
+                    // Keep message and joins seperated for adding the username
+                    case ResponseType.USER_JOINED: 
+                    chatBox.Items.Add(servResponse.GetServerMessage() + " has joined the chat room! Say hi!");
+                    userBox.Items.Add(servResponse.GetServerMessage());
                     break;
                 }
 

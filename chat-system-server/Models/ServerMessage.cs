@@ -1,10 +1,4 @@
 ﻿using Newtonsoft.Json.Linq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace chat_system_server.Models
 {
@@ -14,7 +8,8 @@ namespace chat_system_server.Models
         NAME_TAKEN,
         BAD_REQUEST,
         GLOBAL_MESSAGE,
-        USER_JOINED
+        USER_JOINED,
+        PRIVATE_MESSAGE
     }
 
     public class ServerMessage

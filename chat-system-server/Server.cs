@@ -1,6 +1,5 @@
 ﻿using chat_system_server.Models;
 using Newtonsoft.Json.Linq;
-using System;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
@@ -144,8 +143,7 @@ namespace chat_system_server
             
             if (ackn.GetActionType() != ActionType.RECEIVED)
             {
-                // remove user
-                Console.WriteLine(ackn.GetActionType());
+                // remove user if we do not get confirmation
                 connectedUsers.Remove(user.GetUsername());
                 return;
             }
@@ -153,7 +151,7 @@ namespace chat_system_server
             connectedUsers[user.GetUsername()].SetIsConnected(true);
 
             ServerMessage clientConnectionMsg = new ServerMessage();
-            clientConnectionMsg.SetMessage(user.GetUsername() + " has joined the chat room! Say hi!");
+            clientConnectionMsg.SetMessage(user.GetUsername());
             clientConnectionMsg.SetResponseType(ResponseType.USER_JOINED);
             await client.SendAsync(Encoding.UTF8.GetBytes(clientConnectionMsg.ToJsonString()), 0);
 
@@ -217,7 +215,33 @@ namespace chat_system_server
                 case ActionType.MESSAGE:
                     ProcessGlobalClientMessage(message);
                     break;
+                case ActionType.PRIVATE_MESSAGE:
+                    ProcessPrivateClientMessage(message);
+                    break;
             }
+        }
+
+        private async void ProcessPrivateClientMessage(ClientMessage message)
+        {
+            string userTo = message.GetUserTo();
+            User user;
+
+            if (userTo == null) {
+                //Bad input - send back to client
+                return;
+            }
+
+            if (!connectedUsers.TryGetValue(userTo, out user))
+            {
+                // No user exists - send back to client
+                return;
+            }
+
+            ServerMessage pm = new ServerMessage();
+            pm.SetMessage("FROM: " + message.GetUserFrom() + message.GetContent());
+            pm.SetResponseType(ResponseType.PRIVATE_MESSAGE);
+            await user.GetClientSocket().SendAsync(Encoding.UTF8.GetBytes(pm.ToJsonString()), 0);
+
         }
 
         private async void ProcessGlobalClientMessage(ClientMessage message)

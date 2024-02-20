@@ -17,7 +17,7 @@
         <TextBlock HorizontalAlignment="Left" Margin="75,571,0,0" TextWrapping="Wrap" Text="Username:" VerticalAlignment="Top" Foreground="White"/>
         <TextBlock HorizontalAlignment="Left" Margin="126,28,0,0" TextWrapping="Wrap" Text="CHAT APP" VerticalAlignment="Top" Foreground="White" FontSize="22" FontWeight="Bold"/>
         <TextBlock HorizontalAlignment="Left" Margin="1017,104,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="22" FontWeight="Bold"><Run Text="All Us"/><Run Text="ers"/></TextBlock>
-        <ListBox x:Name="lbMain" Margin="444,138,314,272" RenderTransformOrigin="0.507,0.499"/>
+        <ListBox x:Name="lbMain" Margin="444,138,314,272" RenderTransformOrigin="0.507,0.499" SelectionChanged="lbMain_SelectionChanged"/>
         <TextBlock HorizontalAlignment="Left" Margin="121,104,0,0" TextWrapping="Wrap" VerticalAlignment="Top" Foreground="White" FontSize="22" FontWeight="Bold" Text="Server logs"/>
         <ListBox x:Name="lbUsers" Margin="973,138,93,272" RenderTransformOrigin="0.507,0.499"/>
         <ListBox x:Name="lbServerLogs" Margin="88,138,912,272" RenderTransformOrigin="0.507,0.499"/>
