@@ -106,7 +106,7 @@ namespace chat_system_client_wpf
             }
             else
             {
-                message = new ClientMessage(ActionType.PRIVATE_MESSAGE, client.GetUsername(), messageContent, "None");
+                message = new ClientMessage(ActionType.MESSAGE, client.GetUsername(), messageContent, "None");
             }
 
             var messageBytes = Encoding.UTF8.GetBytes(message.ToJsonString());

@@ -40,6 +40,9 @@ namespace ChatClient.System
                     case ResponseType.USER_JOINED: 
                     chatBox.Items.Add(servResponse.GetServerMessage() + " has joined the chat room! Say hi!");
                     userBox.Items.Add(servResponse.GetServerMessage());
+                        break;
+                    case ResponseType.PRIVATE_MESSAGE:
+                    chatBox.Items.Add(servResponse.GetServerMessage());
                     break;
                 }
 

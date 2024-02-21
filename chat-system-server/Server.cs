@@ -150,17 +150,24 @@ namespace chat_system_server
 
             connectedUsers[user.GetUsername()].SetIsConnected(true);
 
-            ServerMessage clientConnectionMsg = new ServerMessage();
-            clientConnectionMsg.SetMessage(user.GetUsername());
-            clientConnectionMsg.SetResponseType(ResponseType.USER_JOINED);
-            await client.SendAsync(Encoding.UTF8.GetBytes(clientConnectionMsg.ToJsonString()), 0);
-
+            _ = NotifyAllUsersWhenJoined(user);
 
             // Create a background task without awaiting for its completion
             Task userTask = HandleClient(user, client);
 
-            // Finally, add the task to a collection in case synchronization is needed
-            //userTasks.Add(user.GetUsername(), userTask);
+        }
+
+        private async Task NotifyAllUsersWhenJoined(User user)
+        {
+            ServerMessage clientConnectionMsg = new ServerMessage();
+            clientConnectionMsg.SetMessage(user.GetUsername());
+            clientConnectionMsg.SetResponseType(ResponseType.USER_JOINED);
+            foreach (var connectedUser in connectedUsers)
+            {
+                await connectedUser
+                    .Value.GetClientSocket()
+                    .SendAsync(Encoding.UTF8.GetBytes(clientConnectionMsg.ToJsonString()), 0);
+            }
         }
 
         private async Task HandleClient(User user, Socket client)
@@ -210,9 +217,11 @@ namespace chat_system_server
 
         private async void ProcessMessage(ClientMessage message)
         {
+            Console.WriteLine(message.GetActionType());
             switch (message.GetActionType())
             {
                 case ActionType.MESSAGE:
+                    
                     ProcessGlobalClientMessage(message);
                     break;
                 case ActionType.PRIVATE_MESSAGE:
