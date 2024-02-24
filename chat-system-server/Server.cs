@@ -150,11 +150,23 @@ namespace chat_system_server
 
             connectedUsers[user.GetUsername()].SetIsConnected(true);
 
-            _ = NotifyAllUsersWhenJoined(user);
+            await NotifyAllUsersWhenJoined(user);
+
+            List<string> users = new List<string>();
+            foreach (var connectedUser in connectedUsers)
+            {
+                if (connectedUser.Value.GetUsername() == user.GetUsername())
+                {
+                    continue;
+                }
+                users.Add(connectedUser.Value.GetUsername());
+            }
+
+            _ = PollInformationForUserJustJoined(users, client);
+
 
             // Create a background task without awaiting for its completion
             Task userTask = HandleClient(user, client);
-
         }
 
         private async Task NotifyAllUsersWhenJoined(User user)
@@ -170,6 +182,23 @@ namespace chat_system_server
             }
         }
 
+        private async Task PollInformationForUserJustJoined(List<string> users, Socket client)
+        {
+            ServerMessage clientConnectionMsg = new ServerMessage();
+
+            string allUsers = "";
+
+            for (int i = 0; i < users.Count; i++)
+            {
+                allUsers += users[i];
+                allUsers += "|";
+            }
+
+            clientConnectionMsg.SetMessage(allUsers);
+            clientConnectionMsg.SetResponseType(ResponseType.FIRST_TIME_POLL);
+            await client.SendAsync(Encoding.UTF8.GetBytes(clientConnectionMsg.ToJsonString()), 0);
+        }
+
         private async Task HandleClient(User user, Socket client)
         {
             var buffer = new byte[1_024];
@@ -183,7 +212,7 @@ namespace chat_system_server
                     
                     // User closed connection
                     connectedUsers.Remove(user.GetUsername());
-                    SendGlobalServerMessage(user.GetUsername() + " has left the chat. Womp!");
+                    _ = SendGlobalServerMessage(user.GetUsername() + " has left the chat. Womp!");
                     return;
                 }
 
@@ -221,7 +250,6 @@ namespace chat_system_server
             switch (message.GetActionType())
             {
                 case ActionType.MESSAGE:
-                    
                     ProcessGlobalClientMessage(message);
                     break;
                 case ActionType.PRIVATE_MESSAGE:
@@ -266,7 +294,7 @@ namespace chat_system_server
             }
         }
 
-        private async void SendGlobalServerMessage(string content)
+        private async Task SendGlobalServerMessage(string content)
         {
             foreach (KeyValuePair<string, User> entry in connectedUsers)
             {

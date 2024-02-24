@@ -10,7 +10,8 @@ namespace chat_system_client_wpf.Models
         BAD_REQUEST,
         GLOBAL_MESSAGE,
         USER_JOINED,
-        PRIVATE_MESSAGE
+        PRIVATE_MESSAGE,
+        FIRST_TIME_POLL
     }
 
     public class ServerMessage

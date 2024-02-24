@@ -57,8 +57,7 @@ namespace chat_system_client_wpf
             var messageBytes = Encoding.UTF8.GetBytes(message.ToJsonString());
             _ = await client.GetClientSocket().SendAsync(messageBytes, SocketFlags.None);
 
-            //// The server sends one initial message to indicate whether client is connected or not
-            //
+            // The server sends one initial message to indicate whether client is connected or not
             ServerMessage isConnectedMessage = await client.ParseServerMessage();
             
             switch (isConnectedMessage.GetResponseType())
